@@ -48,14 +48,13 @@ Syntax Creation:
         call myFunction [arg1,arg2,arg3]
 """
 from sys import argv
-import ast 
+from shutil import move
+import ast,os
 locals={"&":None}
 globals={}
 finalCode="RESERVED=locals['&']\n"#RESERVED holds the & in Nexus
-
 UNARY_OPS = (ast.UAdd, ast.USub)
 BINARY_OPS = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod)
-
 def is_math(s):
     def _is_arithmetic(node):
         if isinstance(node, ast.Num):
@@ -92,8 +91,8 @@ def handleLine(line:str)->str:
         code+=f"RESERVED={eval(line)}"
     if '//' in line:code+=f"#{line[2:]}"
     if '(' in line and ')' in line:
-        #likely function call
-
+        if 
+        pass
     return code
 def pythonizeFunction(function:dict)->str:
     "converts the Nexus function to python"
@@ -245,6 +244,7 @@ if __name__=="__main__":
     if not file.endswith(".nx"):
         print("Nexus files end in .nx. Aborting...")
         quit(1)
+    filename=file.replace(".nx","")
     try:
         with open(file,'r') as reader:
             file=reader.read()
@@ -271,3 +271,14 @@ if __name__=="__main__":
         quit(1)
     #file has text in it as list of lines
     for i in file:handleLineType(identifyLineType(i))
+    with open(filename+'.py',"w+") as writer:
+        writer.write(finalCode)
+        writer.close()
+    os.system(f"pyinstaller --onefile {filename+'.py'}")
+    os.remove(filename+'.py')
+    move(f"./dist/{filename+'.exe'}",f"./{filename+'.exe'}")
+    os.rmdir("./dist")
+    exec(f"./{filename+'.exe'}")
+    """
+    Essentially compile the python file, delete the python file, move exe from dist and delete dist
+    """
