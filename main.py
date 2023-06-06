@@ -91,7 +91,7 @@ def handleLine(line:str)->str:
         code+=f"RESERVED={eval(line)}"
     if '//' in line:code+=f"#{line[2:]}"
     if '(' in line and ')' in line:
-        if 
+        
         pass
     return code
 def pythonizeFunction(function:dict)->str:
