@@ -1,0 +1,19 @@
+bp myClass(
+    myClass[arg1]{
+        set myArg to arg1|
+    }
+    def a[arg2]{
+        //code|
+    }
+    def b[arg2]{
+        //code|
+    }
+)|
+def myFunction[arg2,arg3]{
+    set a to arg2|
+    set b to arg3|
+}|
+set var1 to 3|
+set var2 to 4|
+myFunction(var1,var2)|
+
