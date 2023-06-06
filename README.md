@@ -39,15 +39,15 @@ Syntax:
         call myFunction [arg1,arg2,arg3]
 
     Defining a variable:
-        set a to 1          //a = 1
-        set b to "yes"      //b = "yes"
+        set a to 1|         //a = 1
+        set b to "yes"|     //b = "yes"
 
     Creating a global variable: 
         set a to 1 global   //global a ; a=1
 
     Using basic calculations:
         Basic calculations can be done and the most previous one will be saved to &
-            set a to 30
-            2*5             //This becomes &
-            set a to a/&    //a ends up with the value of 3;(30/(2*5))
+            set a to 30|
+            2*5|            //This becomes &
+            set a to a/&|   //a ends up with the value of 3;(30/(2*5))
             
