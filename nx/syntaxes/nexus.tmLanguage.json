@@ -1,0 +1,31 @@
+{"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+"name": "Nexus","patterns": [
+	{"include": "#comments"},
+	{"include": "#operators"},
+	{"include": "#strings"},
+	{"include": "#numbers"},
+	{"include": "#reserved-words"},
+	{"include":"#ctrl-statements"},
+	{"include":"#paren-expression"}],
+	"repository": {
+		"comments": {"patterns": [{"begin": "#//","beginCaptures": {"0":{"name":"punctation.definition.comment.nexus"}},"end": "\\n","name":"comment.line.number-sign.nexus"},{"include": "#comments-inline"}]},"comments-inline": {"patterns": [{"begin": "/\\*","captures": {"0": {"name": "punctation.definition.comment.nexus"}},"end": "\\*/","name": "comment.block.nexus"},{"begin":"(^[\\t]+)?(?=//)","beginCaptures": {"1":{"name":"punctuation.whitespace.comment.leading.nexus"}},"end": "(?!\\G)","patterns": [{"begin": "//","beginCaptures": {"0":{"name": "punctation.definition.comment.nexus"}}}]}]},
+		"strings":{"patterns":[{"name":"string.quoted.double.nexus","begin":"\"","end":"\"","patterns":[{"name":"constants.character.escape.nexus","match":"\\\\"}]}]},
+		"operators":
+		{"patterns":[
+			{
+				"match": "(?<![\\w$])(sizeof)(?![\\w$])",
+				"name":"keyword.operator.sizeof.nexus"
+			},
+			{
+				"match": "--",
+				"name":"keyword.operator.decrement.nexus"
+			}
+			
+			]},
+		"paren-expression": {"patterns":[{"begin": "\\(","end": "\\)","beginCaptures": {"0": { "name": "punctuation.paren.open" }},"endCaptures": {"0": { "name": "punctuation.paren.close" }}}]},
+		"numbers":{"patterns":[{"name":"constant.numeric.nexus","begin":"[0-9]+","beginCaptures": {"0":{"name":"constant.numeric"}},"end":"[0-9]+","endCaptures": {"0":{"name":"constant.character"}}}]},
+		"reserved-words":{"patterns":[{"name":"constant.regexp.nexus","begin": "\b(def|public|bp|call|set|to)\b","end":"\\s"}]},
+		"ctrl-statements":{"patterns":[{"name":"constant.regexp.nexus","begin": "\b(if|while|for)\b","end": "\\s"}]} 
+	}	
+,"scopeName": "source.nx"
+}

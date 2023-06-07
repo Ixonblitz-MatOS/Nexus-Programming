@@ -1,0 +1,25 @@
+{
+  "name": "nx",
+  "displayName": "nexus-programming",
+  "description": "Nexus Programming Language",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.78.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "nexus",
+      "aliases": ["Nexus", "nexus"],
+      "extensions": [".nx"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "nexus",
+      "scopeName": "source.nx",
+      "path": "./syntaxes/nexus.tmLanguage.json"
+    }]
+  }
+}

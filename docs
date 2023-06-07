@@ -15,14 +15,14 @@ Syntax:
             myClass[classArgs,args]{
                 //code goes here
             }
-        )
+        )|
 
     Creating a global class:
         public bp myClass(
             myClass[classArgs,args]{
                 //code goes here
             }
-        )
+        )|
 
     Creating a function:
         def myFunction[args]{
