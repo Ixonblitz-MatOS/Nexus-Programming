@@ -48,40 +48,59 @@ Syntax Creation:
         call myFunction [arg1,arg2,arg3]
 """
 from sys import argv
-from shutil import move
-import ast,os
+from os import system
+from ast import UAdd,USub,Add,Sub,Mult,Div,Mod
+from typing import Callable as Function
+from typing import Any
 locals={"&":None}
 globals={}
 finalCode="RESERVED=locals['&']\n"#RESERVED holds the & in Nexus
-UNARY_OPS = (ast.UAdd, ast.USub)
-BINARY_OPS = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod)
-def is_math(s):
-    def _is_arithmetic(node):
-        if isinstance(node, ast.Num):
-            return True
-        elif isinstance(node, ast.Expression):
-            return _is_arithmetic(node.body)
-        elif isinstance(node, ast.UnaryOp):
-            valid_op = isinstance(node.op, UNARY_OPS)
-            return valid_op and _is_arithmetic(node.operand)
-        elif isinstance(node, ast.BinOp):
-            valid_op = isinstance(node.op, BINARY_OPS)
-            return valid_op and _is_arithmetic(node.left) and _is_arithmetic(node.right)
-        else:
-            raise ValueError('Unsupported type {}'.format(node))
+UNARY_OPS = (UAdd, USub)
+BINARY_OPS = (Add, Sub, Mult, Div, Mod)
+"""
+Finished Functions: is_math,helpp,functionToDict
+Working on: handleLine,pythonizeFunction,handleLineType,identifyLineType
 
-    try:
-        return _is_arithmetic(ast.parse(s, mode='eval'))
-    except (SyntaxError, ValueError):
-        return False
-def functionToDict(functionname:str,args:tuple,code:list)->dict:
-    """
-    code is in nexus form not python
-    """
-    return {functionname:{"args":args,"code":code}}
+:TODO:
+    1. Finish handleLine()
+    2. identifyLineType()
+    3. handleLineType()
+
+To clarify:
+    saving to & in nexus is a python binding of locals["&"]
+    the finished class holds the finished functions
+To simplify process:
+    class NexusClass:
+        ONLY HOLD PYTHON IN CODE VARS   
+        NexusClass.name -> class {this}
+        NexusClass.args -> constructor args in str(tuple)
+        NexusClass.code -> constructor code in str 
+        NexusClass.final -> all code for the class
+    class NexusFunction(typing.Callable)
+        NexusFunction.name->def {this}
+        NexusFunction.args->string of the tuple
+        NexusFunction.code->finished string
+        NexusFunction.final->full pythonized code
+    class NexusVariable:
+        NexusVariable.name -> var name
+        NexusVariable.value -> var value
+        NexusVariable.final -> python value
+
+    Write functions to simplify main block at bottom:
+    def writeFile(file):open(file,'w+').write(finalCode)
+    def compileFile(file):system(pyinstaller --onefile --distpath ./ file.py)
+    Maybe add a way to test functions by simulating flows of data:
+        def test(function:Function,args:tuple)->str:pass
+        print(test(identifyLineType,("bp myClass(myClass[args]{})|"))->string containing the output ['bp',['myClass',(args),{'myClass':{"args":(args),"code":""}}]]
+"""
 def handleLine(line:str)->str:
     """
     returns the python version of each line given
+    class or function definitions cannot be given to this function(they get predefined and interpretted separately by their respective objects)
+    Possible lines given:
+        1. set a to value
+        2. 2*5
+        3. 
     """
     code=""
     if not line.endswith("|"):raise SyntaxError("There is no | character at the end of the line.")
@@ -94,133 +113,171 @@ def handleLine(line:str)->str:
         
         pass
     return code
-def pythonizeFunction(function:dict)->str:
-    "converts the Nexus function to python"
-    code=f"def {function.keys()[0]}{str(function[function.keys()[0]]['args'])}:\n"
-    for i in function[function.keys()[0]]["code"]:code+=handleLine(i)+"\n\t"
-    return code
+class NexusClass:
+    """
+    Python class for holding Nexus Class info
+    """
+class NexusFunction(Function):
+    """
+    Python class for holding Nexus Function info
+    """
+    name:str
+    args:str
+    code:str
+    final:str
+    def __init__(self,name:str,args:tuple,code:list)->None:
+        """
+        :param str: Name of the Function
+        :param tuple: args for the function declaration
+        :param list: list of nexus code to be pythonized
+        """
+        self.name=name
+        self.args=str(args)
+        self._handleCode(code)#update self.code
+        self.final=self._finalize()#update self.final
+    def _code(self,code:list)->str:
+        """
+        Pythonize all code and then add to self.code
+        *REQUIRES handleLine() TO BE FUNCTIONAL*
+        """
+        for i in code:self.code+=f"\t{handleLine(i)}\n"
+    def _finalize(self)->None:
+        """
+        Used to save the whole code block to self.final
+        def myFunction[arg,arg2]{               def myFunction(arg,arg2):
+            code                        ->          code
+        }
+        """
+        self.final=f"def {self.name}{self.args}:\n{self.code}"
+class NexusVariable:
+    """
+    Python class for holding Nexus Variable Info
+    """
+class finished:
+    def is_math(s):
+        def _is_arithmetic(node):
+            if isinstance(node, ast.Num):
+                return True
+            elif isinstance(node, ast.Expression):
+                return _is_arithmetic(node.body)
+            elif isinstance(node, ast.UnaryOp):
+                valid_op = isinstance(node.op, UNARY_OPS)
+                return valid_op and _is_arithmetic(node.operand)
+            elif isinstance(node, ast.BinOp):
+                valid_op = isinstance(node.op, BINARY_OPS)
+                return valid_op and _is_arithmetic(node.left) and _is_arithmetic(node.right)
+            else:
+                raise ValueError('Unsupported type {}'.format(node))
+
+        try:
+            return _is_arithmetic(ast.parse(s, mode='eval'))
+        except (SyntaxError, ValueError):
+            return False
+    def functionToDict(functionname:str,args:tuple,code:list)->dict:
+        """
+        code is in nexus form not python
+        """
+        return {functionname:{"args":args,"code":code}}
+    def pythonizeFunction(function:dict)->str:
+        "converts the Nexus function to python"
+        code=f"def {function.keys()[0]}{str(function[function.keys()[0]]['args'])}:\n"
+        for i in function[function.keys()[0]]["code"]:code+=handleLine(i)+"\n\t"
+        return code
 def handleLineType(t:str,args:list)->None:
     """
-    Handles what to do with the line
-    Returns nothing because it will be handled here before moving on
-    :NOTE: functions always be passed as dictionaries like: 
-    a={
-        functionname:
-            {
-                'args':(arg,arg),
-                'code';[code,code,code]
-            }
-    }
-    and are referenced like 
-    a[functionname][args] or a[functionname][code]
+    Handles each line based on response from identifyLineType()
     """
     match t:
-        case "bp":
+        case None:pass#comments
+        case 'bp':
             """
-            :param: classname:str ; This includes the inherit statement if specified
-            :param: constructorParams:tuple
-            :param: functions:dict format
+            class identification
+            args:
+                [NexusClass Class]
+            instructions:
+                add Class.final -> finalCode
             """
-            classname=args[0]
-            if "inherits" in classname:
-                classnameActual=classname.split()[0]
-                inherited=classname.split()[2]
-                classname=f"{classnameActual}({inherited}):"
-            else:classname=f"{classname}:"
-            constructorParams=args[1]
-            finalConstructorParams=""
-            for i in constructorParams:finalConstructorParams+=i+","
-            finalConstructorParams=finalConstructorParams.rstrip(finalConstructorParams[-1])
-            functions=args[2]
-            initCode=functions[classnameActual]["code"]
-            finalInit=""
-            for i in initCode:finalInit+=handleLine(i)+";"
-            code=f"class {classname}\n\tdef __init__(self,{finalConstructorParams}):\n\t\t{finalInit}"
-
-
-            finalCode+=code+"\n"
-        case "func":
+        case 'def':
             """
-            :param: func:dict format
+            function identification
+            args:
+                [NexusFunction Function]
+            instructions:
+                add Function.final -> finalCode
             """
-            code=f""
-            finalCode+=code+"\n"
-        case "var":
+        case 'set':
             """
-            :param: name:str
-            :param: value:type|Any
-            :param: scope:bool; True:global False:local
+            variable identification
+            args:
+                [NexusVariable Variable]
+            instructions:
+                add Variable.final -> finalCode
             """
-
-            code=f""
-            finalCode+=code+"\n"
-        case "calc":
+        case 'calc':
             """
-            :param: value:int|float|Any
-
-            Whenever & is called technically it is the RESERVED variable because & isn't supported as python variable name
+            regular calculation(save to &)
+            args:
+                [str expression]
+            instructions:
+                eval(expression)->&
             """
-            value=eval(args[0])
-            locals["&"]=value#update locals value
-        case "comment":
-            """
-            :param: text
-            """
-            code=f"#{args[0]}"
-            finalCode+=code+"\n"
-def identifyLineType(line:str)->tuple[str,list]:
+def identifyLineType(line:str)->tuple[str,Any]:
     """
     Tells if the line in question is:
-        - Class definition
+        'bp' - Class definition
+        'def' - Function definition
+        'set' - Variable definition
+        'calc' - Basic Calculations
+    """
+    
+    if '//' in line:return None#comments
+    if 'bp' in line:
+        """
+        This is a class definition
+        return:
+            ['bp',NexusClass Class]
+        """
+    if 'def' in line:
+        """
+        This is a function definition
+        return:
+            ['def',NexusFunction Function]
+        """
+    if 'set' in line:
+        """
+        This is a variable definition
+        return:
+            ['set',NexusVariable Variable]
+        """
+        if 'to' not in line:raise SyntaxError("There is no to keyword to set name to.")
+
+    if ('+' in line) or ('-' in line) or ('*' in line) or ('/' in line) or ('^' in line):
+        """
+        This is a calculation
+        return:
+            ['calc',string expression]
+        """
+        return ('calc',line)
+"""
+Class definition
         - Function definition
         - Variable definition
         - Basic Calculations
         - Comment
-    """
-    if 'bp' in line:
-        """
-        it is a class definition with the syntax:
-        bp myClass(
-            myClass[arg1,arg2]{
-            code
-            }
-        )
-        Ways to throw errors:
-            Uses special characters as name
-            missing open or close parenthases
-            missing contructor definition
-            
-        return
-            :type: type(bp)
-            :param: classname:str ; This includes the inherit statement if specified
-            :param: constructorParams:tuple
-            :param: functions:dict format
-        """
-        #bp Myclass inherits Class(Myclass[]{})
-        classname=line.split("(")[0].split()#["bp,"Myclass","inherits","Class"]
-        Actualname=classname[1]
-        if "inherits" in classname:classname=classname[1]+classname[2]+classname[3]#"Myclass inherits Class"
-        else:classname=classname[1]
-        #one liners vs multi line matter now for text processing of Constructor params and constructor code
-        if "(" in line and ")" in line:
-            """
-            One liners should be handled like :
-                bp Myclass inherits Class(Myclass[]{})
-            """
-            #bp myClass(myClass[arg1]{set myArg to arg1}def a[arg2]{//code', '}def b[arg2]{//code})
-            constructorParams=line.split("(")[1].replace(Actualname,"").split("]")[0].replace("[","").split(",") #shows list of init params
-            codeLines=line.split("{")[1].split("}")[0].split("|") #[cod,code,code]
-        else:raise SyntaxError("Missing Parenthases")
-        functions={
-            functionToDict(Actualname,tuple(constructorParams),codeLines),#This is init function 
-            }
-        funcs=[]# holds(functionname:str,params:tuple,codelines:list)
-        #bp myClass(myClass[arg1]{set myArg to arg1}def a[arg2]{//code', '}def b[arg2]{//code})
-        numFuncs=line.split("def")[1:]#[" a[arg2]{//code', '}", ' b[arg2]{//code})']
-        for i in numFuncs:funcs.append((i.split("[")[0],i.split("[")[1].split("]")[0],i.split("{")[1].split("}")[0].split("|")))
-        for i in funcs:functions.add(functionToDict(i[0],i[1],i[2]))
-        return ("bp",[classname,constructorParams,functions])
-        
+
+identifyLineType(line:str)->tuple[str,list](tuple of the string of keyword, list of arguments to pass to handleLineType based on that keyword)
+if line contains bp:
+    return ['bp',[classname:str,constructorParams:tuple,functions:NexusFunction]]
+if line contains def:
+
+if line contains set:
+
+if line contains if/while/for:
+
+if line contains call:
+
+"""
+
 def helpp():
     a="""
     Argv:
@@ -271,14 +328,6 @@ if __name__=="__main__":
         quit(1)
     #file has text in it as list of lines
     for i in file:handleLineType(identifyLineType(i))
-    with open(filename+'.py',"w+") as writer:
-        writer.write(finalCode)
-        writer.close()
-    os.system(f"pyinstaller --onefile {filename+'.py'}")
-    os.remove(filename+'.py')
-    move(f"./dist/{filename+'.exe'}",f"./{filename+'.exe'}")
-    os.rmdir("./dist")
-    exec(f"./{filename+'.exe'}")
     """
-    Essentially compile the python file, delete the python file, move exe from dist and delete dist
+    FIXING SOON
     """
