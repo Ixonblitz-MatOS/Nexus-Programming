@@ -58,6 +58,13 @@ finalCode="RESERVED=locals['&']\n"#RESERVED holds the & in Nexus
 UNARY_OPS = (UAdd, USub)
 BINARY_OPS = (Add, Sub, Mult, Div, Mod)
 """
+Nexus Errors(manage exit codes):
+HELP(1) - Help function
+NO_ARGS(2) - No args were given to the interpreter
+"""
+NEXUS_ERRORS={'HELP':1,'NO_ARGS':2,'CANNOT_READ_FILE':3,'WRONG_FILE_TYPE':4}
+print(NEXUS_ERRORS.HELP)
+"""
 Finished Functions: is_math,helpp,functionToDict,handleLine,pythonizeFunction
 Working on: handleLineType,identifyLineType
 
@@ -423,7 +430,7 @@ def helpp():
     target_file
       """
     print(a)
-    quit()
+    quit(NEXUS_ERRORS['HELP'])
 if __name__=="__main__":
     """
     For each script there must be:
@@ -434,10 +441,13 @@ if __name__=="__main__":
     """
     args=argv[1:]
     if "?" in args or help in args: helpp()
-    file=args[0]
+    try:file=args[0]
+    except IndexError:
+        helpp()
+        quit(NEXUS_ERRORS['NO_ARGS'])
     if not file.endswith(".nx"):
         print("Nexus files end in .nx. Aborting...")
-        quit(1)
+        quit(NEXUS_ERRORS['WRONG_FILE_TYPE'])
     filename=file.replace(".nx","")
     try:
         with open(file,'r') as reader:
@@ -462,7 +472,7 @@ if __name__=="__main__":
             file=tokens
     except (FileNotFoundError,Exception):
         print("There was a file reading error.")
-        quit(1)
+        quit(NEXUS_ERRORS['CANNOT_READ_FILE'])
     #file has text in it as list of lines
     for i in file:handleLineType(identifyLineType(i))
     """
