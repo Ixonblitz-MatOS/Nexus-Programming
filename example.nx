@@ -15,5 +15,5 @@ def myFunction[arg2,arg3]{
 }|
 set var1 to 3|
 set var2 to 4|
-myFunction(var1,var2)|
+call myFunction(var1,var2)|
 

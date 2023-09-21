@@ -53,45 +53,44 @@ from ast import UAdd,USub,Add,Sub,Mult,Div,Mod,Num,Expression,UnaryOp,BinOp,pars
 from typing import Callable as Function
 from typing import Any,Literal
 locals={"&":None}
+keywords=["if","while","for",'set','call','public','def','bp','throw']
 globals={}
 finalCode="RESERVED=locals['&']\n"#RESERVED holds the & in Nexus
 UNARY_OPS = (UAdd, USub)
 BINARY_OPS = (Add, Sub, Mult, Div, Mod)
+def updateReserved(new:Any):
+    locals['&']=new
+    finalCode=
 """
 Nexus Errors(manage exit codes):
 HELP(1) - Help function
 NO_ARGS(2) - No args were given to the interpreter
+CANNOT_READ_FILE(3) - Cannot read the nexus file specified
+WRONG_FILE_TYPE(4) - Not a nexus file
+TESTING(5) - developmental quits
+DEBUG(6) - developmental quits
+IDENTIFY_UNRECOGNIZED(7) - identifyLineType() doesn't recognize the list
+MISSING_ARGS_TESTING(8) - Classes are missing args during testing
+IDENTIFY_NO_CODE(9) - Throwing errors for self.code not existing
 """
-NEXUS_ERRORS={'HELP':1,'NO_ARGS':2,'CANNOT_READ_FILE':3,'WRONG_FILE_TYPE':4}
-print(NEXUS_ERRORS.HELP)
+NEXUS_ERRORS={'HELP':1,'NO_ARGS':2,'CANNOT_READ_FILE':3,'WRONG_FILE_TYPE':4,'TESTING':5,'DEBUG':6,'IDENTIFY_UNRECOGNIZED':7,
+              'MISSING_ARGS_TESTING':8,'IDENTIFY_NO_CODE':9,"RESERVED_NAME":10}
+def is_math(s):
+        def _is_arithmetic(node):
+            if isinstance(node, Num):return True
+            elif isinstance(node, Expression):return _is_arithmetic(node.body)
+            elif isinstance(node, UnaryOp):
+                valid_op = isinstance(node.op, UNARY_OPS)
+                return valid_op and _is_arithmetic(node.operand)
+            elif isinstance(node, BinOp):
+                valid_op = isinstance(node.op, BINARY_OPS)
+                return valid_op and _is_arithmetic(node.left) and _is_arithmetic(node.right)
+            else:raise ValueError('Unsupported type {}'.format(node))
+        try:return _is_arithmetic(parse(s, mode='eval'))
+        except (SyntaxError, ValueError):return False
 """
 Finished Functions: is_math,helpp,functionToDict,handleLine,pythonizeFunction
 Working on: handleLineType,identifyLineType
-
-:TODO:
-    1. Finish handleLine()
-    2. identifyLineType()
-    3. handleLineType()
-
-To clarify:
-    saving to & in nexus is a python binding of locals["&"]
-    the finished class holds the finished functions
-To simplify process:
-    class NexusClass:
-        ONLY HOLD PYTHON IN CODE VARS   
-        NexusClass.name -> class {this}
-        NexusClass.args -> constructor args in str(tuple)
-        NexusClass.code -> constructor code in str 
-        NexusClass.final -> all code for the class
-    class NexusFunction(typing.Callable)
-        NexusFunction.name->def {this}
-        NexusFunction.args->string of the tuple
-        NexusFunction.code->finished string
-        NexusFunction.final->full pythonized code
-    class NexusVariable:
-        NexusVariable.name -> var name
-        NexusVariable.value -> var value
-        NexusVariable.final -> python value
     class ClassString(str):
      def findClose(self,char:Literal['(']|Literal['[']|Literal['{'],startindex:int=-1):pass
      
@@ -191,8 +190,10 @@ def handleLine(line:str,forVar:bool=False)->str|Any:
     """
     code=""
     if not line.endswith("|"):raise SyntaxError("There is no | character at the end of the line.")
+    line=line.removesuffix("|")
     if 'set' in line:
         if forVar:raise SyntaxError("There cannot be a variable declaration within a variable declaration")
+        if line.__contains__("&"):line.replace("&","RESERVED")
         code+=f"{line.split()[1]}={line.split()[3]}"
     if is_math(line):
         if forVar:return eval(line)
@@ -205,7 +206,7 @@ def handleLine(line:str,forVar:bool=False)->str|Any:
     if '(' in line and ')' in line:
         #doesnt really matter if forVar cuz we don't process parens unless its mathematical which wouldve been accounted for
         try:handleLine(line.split('(')[1].split(')')[0])
-        except Exception:raise SyntaxError("The line could not be processed: "+line.split('(')[1].split(')')[0])
+        except Exception:raise SyntaxError("The line could not be processed: ".join(line.split('(')[1].split(')')[0]))
     return code
 class NexusClass:
     """
@@ -244,7 +245,7 @@ class NexusClass:
         if not self.inheritence:self.final=f"class {self.name}:\n\tdef __init__(self,{self.args[1:len(self.args)-1]})->None:\n{self.code}"#This finished init function
         else:self.final=f"class {self.name}({self.inheritence}):\n\tdef __init__(self,{self.args[1:len(self.args)-1]})->None:\n{self.code}"#This finished init function
         for i in self.functions:self.final+=f"{i.final}\n"
-class NexusFunction(Function):
+class NexusFunction(Function): 
     """
     Python class for holding Nexus Function info
     """
@@ -252,7 +253,7 @@ class NexusFunction(Function):
     args:str
     code:str
     final:str
-    def __init__(self,name:str,args:tuple,code:list,isclass:bool)->None:
+    def __init__(self,name:str,args:tuple,code:list,isclass:bool,public:bool)->None:
         """
         :param str name: Name of the Function
         :param tuple args: args for the function declaration
@@ -261,6 +262,9 @@ class NexusFunction(Function):
         """
         self.name=name
         self.args=str(args)
+        self.nexuscode="".join(i for i in code)
+        print("nexus code:" +self.nexuscode)
+        self.code=str()
         self.isclass=isclass
         self._handleCode(code)#update self.code
         self.final=self._finalize()#update self.final
@@ -282,6 +286,9 @@ class NexusFunction(Function):
         """
         if not self.isclass:self.final=f"def {self.name}{self.args}:\n{self.code}"
         self.final=f"\tdef {self.name}{self.args}:\n{self.code}"
+    def __call__(self,name:str,args:tuple,code:list,isclass:bool):self.__init__(name=name,args=args,code=code,isclass=isclass)
+    def test(self)->str:
+        return f"NAME:{self.name}\nARGS:{self.args}\nCODE:{self.code}\nFINAL:{self.final}"
 class NexusVariable:
     """
     Python class for holding Nexus Variable Info
@@ -294,33 +301,24 @@ class NexusVariable:
         :param str name: name of the variable
         :param Any value: value of the variable
         """
+        if name in keywords:
+            print("Cannot name variables Keywords.")
+            quit(NEXUS_ERRORS['RESERVED_NAME'])
         self.name=name
         self.value=handleLine(str(value))
         self._finalize()
     def _finalize(self)->None:self.final=f"{self.name}={str(self.value)}"
-class finished:
-    def is_math(s):
-        def _is_arithmetic(node):
-            if isinstance(node, Num):return True
-            elif isinstance(node, Expression):return _is_arithmetic(node.body)
-            elif isinstance(node, UnaryOp):
-                valid_op = isinstance(node.op, UNARY_OPS)
-                return valid_op and _is_arithmetic(node.operand)
-            elif isinstance(node, BinOp):
-                valid_op = isinstance(node.op, BINARY_OPS)
-                return valid_op and _is_arithmetic(node.left) and _is_arithmetic(node.right)
-            else:raise ValueError('Unsupported type {}'.format(node))
-        try:return _is_arithmetic(parse(s, mode='eval'))
-        except (SyntaxError, ValueError):return False
-    def functionToDict(functionname:str,args:tuple,code:list)->dict:
+
+   
+def functionToDict(functionname:str,args:tuple,code:list)->dict:
         """
         code is in nexus form not python
         """
         return {functionname:{"args":args,"code":code}}
-    def pythonizeFunction(function:dict)->str:
+def pythonizeFunction(function:dict)->str:
         "converts the Nexus function to python"
-        code=f"def {function.keys()[0]}{str(function[function.keys()[0]]['args'])}:\n"
-        for i in function[function.keys()[0]]["code"]:code+=handleLine(i)+"\n\t"
+        code=f"def {list(function.keys())[0]}({str(function[list(function.keys())[0]]['args'])}):\n\t"
+        for i in function[list(function.keys())[0]]["code"]:code+=handleLine(i)+"\n\t"
         return code
 def handleLineType(t:str,args:list)->None:
     """
@@ -336,6 +334,7 @@ def handleLineType(t:str,args:list)->None:
             instructions:
                 add Class.final -> finalCode
             """
+            finalCode+=args[0].final
         case 'def':
             """
             function identification
@@ -344,6 +343,7 @@ def handleLineType(t:str,args:list)->None:
             instructions:
                 add Function.final -> finalCode
             """
+            finalCode+=args[0].final
         case 'set':
             """
             variable identification
@@ -352,6 +352,7 @@ def handleLineType(t:str,args:list)->None:
             instructions:
                 add Variable.final -> finalCode
             """
+            finalCode+=args[0].final
         case 'calc':
             """
             regular calculation(save to &)
@@ -360,17 +361,19 @@ def handleLineType(t:str,args:list)->None:
             instructions:
                 eval(expression)->&
             """
-def identifyLineType(line:str)->tuple[str,Any]:
+def identifyLineType(line:str,extra:dict)->tuple[str,Any]:
     """
+    :param dict: extra {"isClass":True|False}
     Tells if the line in question is:
         'bp' - Class definition
         'def' - Function definition
         'set' - Variable definition
         'calc' - Basic Calculations
+        'call' - Call existing class function or variabl
     """
-    
-    if '//' in line:return None#comments
-    if 'bp' in line:
+    operators=['+','-','*','/','^']
+    if line.startswith('//'):return None#comments
+    elif 'bp' in line:
         """
         This is a class definition
         return:
@@ -378,30 +381,60 @@ def identifyLineType(line:str)->tuple[str,Any]:
         """
         classname=line.split('bp')[1].split('(')[0]
         args=tuple(line.split('[')[1].split(']')[0].split(','))
-        #bp myClass(myClass[classArgs,args]{//code goes here} def def def def def)|
+        """
+        "bp myClass(myClass[arg1]{set myArg to arg1|}def a[arg2]{//code|}def b[arg2]{//code|})|"
+        """
         code=line.split('{')[1].split('}')[0].split('|')
         for i in code:i+="|"
-        return ['bp',NexusClass(classname,args,code,)]
-    if 'def' in line:
+        functions=[]
+        indx=line.find("}")
+        final=line[indx+1:len(line)-2]
+        #def a[arg2]{//code|}def b[arg2]{//code|}
+        lists=final.split('}')
+        for i in lists:
+            i+="}"
+            functions.append(identifyLineType(i,{'isClass':True})[1])
+        try:
+            return ['bp',NexusClass(name=classname,args=args,code=code,functions=functions)]
+        except (TypeError,AttributeError) as e:
+            if e.args[0].__contains__('AttributeError'):
+                print("Nexus No Code Provided: ".join(e.args[0]))
+                quit(NEXUS_ERRORS['IDENTIFY_NO_CODE'])
+            else:
+                print("Missing args: ".join(e.args[0]))
+                quit(NEXUS_ERRORS['MISSING_ARGS_TESTING'])
+    elif 'def' in line:
         """
         This is a function definition
         return:
             ['def',NexusFunction Function]
         """
-    if 'set' in line:
+        #def a[arg2]{//code|}
+        functionname=line.split("def")[1].split("[")[0].strip()
+        args=[i for i in line.split('[')[1].split(']')[0].split(',')]
+        openIndex,closeIndex=line.find('{')+1,line.find("}")        
+        code=[i for i in line[openIndex:closeIndex].split('|')]
+        print(f"Code: {code}")
+        finalcode=[]
+        for i in code:finalcode.append(i+'|')
+        return ['def',NexusFunction(name=functionname,args=tuple(args),code=finalcode,isclass=extra['isClass'])]
+    elif 'set' in line:
         """
         This is a variable definition
         return:
             ['set',NexusVariable Variable]
         """
         if 'to' not in line:raise SyntaxError("There is no to keyword to set name to.")
-    if ('+' in line) or ('-' in line) or ('*' in line) or ('/' in line) or ('^' in line):
+    elif any(op in line for op in operators):
         """
         This is a calculation
         return:
             ['calc',string expression]
         """
         return ('calc',line)
+    else:
+        print("Unrecognized Line")
+        quit(NEXUS_ERRORS['IDENTIFY_UNRECOGNIZED'])
 """
 Class definition
         - Function definition
@@ -409,7 +442,7 @@ Class definition
         - Basic Calculations
         - Comment
 
-identifyLineType(line:str)->tuple[str,list](tuple of the string of keyword, list of arguments to pass to handleLineType based on that keyword)
+identifyLineType(line:str)->tuple[str,Any](tuple of the string of keyword, list of arguments to pass to handleLineType based on that keyword)
 if line contains bp:
     return ['bp',Class:NexusClass]
 if line contains def:
@@ -421,7 +454,23 @@ if line contains if/while/for:
 if line contains call:
 
 """
-
+def testFunction():
+    """
+    Tested:
+        identifyLineType():
+            - Calculations(1+1,1^1) | WORKING
+            - Comments("//This is a comment to be ignored") | WORKING
+            - bp("bp myClass(myClass[arg1]{set myArg to arg1|}def a[arg2]{//code|}def b[arg2]{//code|})|") | NOT WORKING> Need to break down functions for Nexus Class
+            - def() | UNCODED
+            - set() | UNCODED
+    """
+    a={"a":1,"b":2}
+    print(list(a.keys())[1])
+    # f=identifyLineType("def a[arg2]{1+1|set a to &|}",extra={'isClass':True})[1]
+    # print(f.test())
+    # quit(NEXUS_ERRORS['TESTING'])
+    print(pythonizeFunction(functionToDict("myFunction",("arg1"),["1+1|","set a to &|"])))
+testFunction()
 def helpp():
     a="""
     Argv:

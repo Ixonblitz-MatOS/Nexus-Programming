@@ -48,4 +48,8 @@ Syntax:
             set a to 30
             2*5             //This becomes &
             set a to a/&    //a ends up with the value of 3;(30/(2*5))
+    Throwing Errors:
+        Basic Errors can be found below and will have specific exit codes in correlation.
+            Throwing Errors:
+                throw(errType,message)
             
